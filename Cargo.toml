@@ -1,0 +1,11 @@
+[package]
+name = "write-yourself-a-git"
+version = "0.1.0"
+authors = ["Ferenc Nagy <ferenc.nagy1@ge.com>"]
+edition = "2018"
+
+[dependencies]
+clap = {version = "~2.27.0", features = ["yaml"]}
+flate2 = { version = "1.0", features = ["zlib"], default-features = false }
+rust-ini = "0.13"
+sha1 = { version = "0.6.0", features = ["std"] }

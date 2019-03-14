@@ -1,0 +1,51 @@
+name: wyag
+version: "1.0"
+author: Ferenc Nagy <nagy.ferenc.jr@protonmail.com>
+about: Git
+args:
+  - verbose:
+      short: v
+      multiple: true
+      help: Sets the level of verbosity
+subcommands:
+  - init:
+      about: Creates a new Git repository
+      args:
+        - path:
+            index: 1
+            takes_value: true
+            value_name: PATH
+            help: specify the new repository's path
+  - cat-file:
+      about: Provide content of repository objects
+      args:
+        - type:
+            index: 1
+            takes_value: true
+            value_name: TYPE
+            help: specify the object type
+        - object:
+            index: 2
+            takes_value: true
+            value_name: OBJECT
+            help: The object to display
+  - hash-object:
+      about: Compute object ID and optionally creates a blob from a file
+      args:
+        - type:
+            short: t
+            long: type
+            default_value: blob
+            takes_value: true
+            value_name: TYPE
+            help: specify the object type
+        - write:
+            short: w
+            long: write
+            takes_value: false
+            help: Actually write the object into the database
+        - path:
+            index: 1
+            takes_value: true
+            value_name: PATH
+            help: The path of the object
