@@ -18,7 +18,12 @@ pub struct GitObject {
 
 impl Serializable for GitObject {
     fn serialize(&self) -> &[u8]{
-        &self.data
+        match self.object_type {
+            Type::Commit => &self.data,
+            Type::Tree => &self.data,
+            Type::Tag => &self.data,
+            Type::Blob => &self.data
+        }
     }
 
     fn deserialize(_input: &[u8]) -> Self {

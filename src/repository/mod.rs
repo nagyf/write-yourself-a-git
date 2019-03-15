@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -15,6 +16,9 @@ use crate::repository::object::{GitObject, Serializable, Type};
 
 pub mod config;
 pub mod object;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug)]
 pub struct GitRepository {
@@ -216,5 +220,79 @@ impl GitRepository {
             .map_err(|e| {
                 GitError::GenericError(format!("Unable to compress and save object data: {} - {}", sha, e.to_string()))
             })
+    }
+
+    /// Key-value list with message parsing.
+    ///
+    /// Used for commit object parsing.
+    pub fn kvlm_parse(raw: &[u8]) -> BTreeMap<String, Vec<u8>> {
+        let raw_vec = raw.to_vec();
+        let mut result = BTreeMap::new();
+
+        let mut current = 0;
+
+        while current < raw_vec.len() {
+            let space = raw_vec.iter().position(|b| b == &b' ');
+            let newline = raw_vec.iter().position(|b| b == &b'\n');
+
+            if space.is_none() || (newline.is_some() && space.unwrap() < newline.unwrap()) {
+                result.insert("data".to_owned(), raw_vec[current + 1..].to_vec());
+                return result;
+            }
+
+            let space_pos = space.unwrap();
+            let key = String::from_utf8(raw_vec[current..space_pos].to_vec()).unwrap();
+
+            // Find the end of the value.  Continuation lines begin with a
+            // space, so we loop until we find a "\n" not followed by a space.
+            let mut it = space_pos + 1;
+            let end_pos = loop {
+                let newline = raw_vec[it..].iter().position(|b| b == &b'\n');
+                if newline.is_none() {
+                    break raw_vec.len();
+                } else {
+                    let newline_pos = newline.unwrap();
+                    if raw_vec[newline_pos + 1] != b' ' {
+                        break newline_pos;
+                    }
+                    it = newline_pos + 1;
+                }
+            };
+
+            let mut value = GitRepository::remove_spaces_after_newline(&raw_vec[space_pos + 1..end_pos]);
+
+            // Don't overwrite existing value, but append to it
+            if result.contains_key(&key) {
+                let mut previous = result.get(&key).unwrap().to_vec();
+                previous.append(&mut value);
+                result.insert(key, previous);
+            } else {
+                result.insert(key, value);
+            }
+
+            current = end_pos+1;
+        }
+
+        result
+    }
+
+    /// Removes spaces after newlines
+    fn remove_spaces_after_newline(input: &[u8]) -> Vec<u8> {
+        if input.len() <= 1 {
+            return Vec::from(input);
+        }
+
+        let mut result = Vec::new();
+        let mut idx = 1;
+        while idx < input.len() + 1 {
+            result.push(input[idx-1]);
+            if idx < input.len() && input[idx-1] == b'\n' && input[idx] == b' ' {
+                idx += 2;
+            } else {
+                idx += 1;
+            }
+        }
+
+        result
     }
 }
